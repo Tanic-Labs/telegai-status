@@ -19,22 +19,22 @@
   },
   {
     "name": "Edge Functions",
-    "url": "https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/chat",
+    "url": "https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/fetch-all-service",
     "icon": "https://icons.duckduckgo.com/ip3/ywqesktuqvgsmrgraors.supabase.co.ico",
     "slug": "edge-functions",
     "status": "down",
-    "uptime": "0.03%",
-    "uptimeDay": "0.03%",
-    "uptimeWeek": "0.03%",
-    "uptimeMonth": "0.03%",
-    "uptimeYear": "0.03%",
-    "time": 169,
-    "timeDay": 169,
-    "timeWeek": 169,
-    "timeMonth": 169,
-    "timeYear": 169,
+    "uptime": "0.08%",
+    "uptimeDay": "0.08%",
+    "uptimeWeek": "0.08%",
+    "uptimeMonth": "0.08%",
+    "uptimeYear": "0.08%",
+    "time": 235,
+    "timeDay": 235,
+    "timeWeek": 235,
+    "timeMonth": 235,
+    "timeYear": 235,
     "dailyMinutesDown": {
-      "2026-03-02": 22
+      "2026-03-02": 66
     }
   },
   {
