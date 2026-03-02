@@ -9,11 +9,9 @@ sites:
       - 301
 
   - name: Edge Functions
-    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/chat
+    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/fetch-all-service
     expectedStatusCodes:
       - 200
-      - 401
-      - 400
 
   - name: Database
     url: https://ywqesktuqvgsmrgraors.supabase.co/rest/v1/
