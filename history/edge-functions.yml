@@ -1,7 +1,7 @@
-url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/chat
-status: down
-code: 500
-responseTime: 190
-lastUpdated: 2026-03-02T19:42:28.845Z
+url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/fetch-all-service
+status: up
+code: 200
+responseTime: 369
+lastUpdated: 2026-03-02T20:42:42.691Z
 startTime: 2026-03-02T19:36:18.898Z
 generator: Upptime <https://github.com/upptime/upptime>
