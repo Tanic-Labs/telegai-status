@@ -24,6 +24,11 @@ sites:
     expectedStatusCodes:
       - 200
 
+status-website:
+  baseUrl: /telegai-status
+  name: TelegAI Status
+  theme: light
+
 workflowSchedule:
   graphs: "0 0 * * *"
   responseTime: "0 23 * * *"
