@@ -55,10 +55,8 @@ sites:
       - 200
       - 401
 
-status-website:
-  baseUrl: /telegai-status
-  name: TelegAI Status
-  theme: light
+# Custom status page deployed to gh-pages manually — do not regenerate
+# status-website: disabled
 
 workflowSchedule:
   graphs: "0 0 * * *"
