@@ -229,9 +229,9 @@
 
     /* -- Parse Commits -- */
     function parseStatusCommits(commits) {
-      // Pattern: "emoji ServiceName is up/down (code in time ms)"
+      // Pattern: " ServiceName is up/down (code in time ms)"
       // Also handle old name: "LLM (OpenRouter)"
-      const re = /^\s*\S*\s*(.+?)\s+is\s+(up|down)\s+\((\d+)\s+in\s+([\d.]+)\s+ms\)\s*$/;
+      const re = /^\s*(.+?)\s+is\s+(up|down)\s+\((\d+)\s+in\s+([\d.]+)\s+ms\)\s*$/;
       const checks = [];
 
       for (const c of commits) {
