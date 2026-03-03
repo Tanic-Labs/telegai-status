@@ -534,9 +534,6 @@
 
     /* -- Helpers -- */
     function resolveUptimeStatus(svc) {
-      if (svc.status === 'up') return 'up';
-      if (svc.status === 'degraded') return 'degraded';
-      if (svc.status === 'down') return 'down';
       const pct = parseFloat(svc.uptimeDay || svc.uptime || '0');
       if (pct >= 99) return 'up';
       if (pct >= 90) return 'degraded';
