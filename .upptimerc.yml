@@ -44,10 +44,16 @@ sites:
       - 200
       - 401
 
-  - name: LLM (OpenRouter)
+  - name: LLM - OpenRouter
     url: https://openrouter.ai/api/v1/models
     expectedStatusCodes:
       - 200
+
+  - name: LLM - Novita AI
+    url: https://api.novita.ai/v3/openai/models
+    expectedStatusCodes:
+      - 200
+      - 401
 
 status-website:
   baseUrl: /telegai-status
