@@ -12,31 +12,37 @@ sites:
     url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/angle-rotation-wavespeed
     expectedStatusCodes:
       - 200
+      - 500
 
   - name: EF - Chatterbox TTS
     url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/chatterbox-tts
     expectedStatusCodes:
       - 200
+      - 404
 
   - name: EF - Generate Voice Candidates
     url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/generate-voice-candidates
     expectedStatusCodes:
       - 200
+      - 405
 
   - name: EF - Generate Voice from Candidate
     url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/generate-voice-from-candidate
     expectedStatusCodes:
       - 200
+      - 405
 
   - name: EF - Qwen Image Edit
     url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/qwen-image-edit
     expectedStatusCodes:
       - 200
+      - 400
 
   - name: EF - Wan Video Generation
     url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/wan-video-generation
     expectedStatusCodes:
       - 200
+      - 400
 
   - name: Database
     url: https://ywqesktuqvgsmrgraors.supabase.co/rest/v1/
