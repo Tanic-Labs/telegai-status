@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TelegAI Status</title>
+  <meta name="description" content="Real-time status and uptime monitoring for TelegAI services.">
+  <link rel="icon" href="https://www.telegai.com/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #09090b;
+      --surface: #111113;
+      --surface-2: #18181b;
+      --surface-3: #1e1e22;
+      --text-1: #fafafa;
+      --text-2: #a1a1aa;
+      --text-3: #71717a;
+      --text-4: #3f3f46;
+      --green: #22c55e;
+      --green-dim: rgba(34, 197, 94, 0.12);
+      --yellow: #eab308;
+      --yellow-dim: rgba(234, 179, 8, 0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239, 68, 68, 0.12);
+      --border: rgba(255,255,255,0.06);
+      --border-2: rgba(255,255,255,0.1);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text-1);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+
+    header { padding: 40px 0 0; }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; }
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-logo { width: 28px; height: 28px; border-radius: 7px; }
+    .header-title { font-size: 16px; font-weight: 600; color: var(--text-1); letter-spacing: -0.01em; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .refresh-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-4); letter-spacing: 0.02em; text-transform: uppercase; }
+    .refresh-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-4); animation: blink 2s ease-in-out infinite; }
+    @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+    .status-banner { margin: 32px 0; padding: 24px 28px; border-radius: var(--radius); border: 1px solid var(--border); position: relative; overflow: hidden; }
+    .status-banner::before { content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0.5; }
+    .status-banner.operational { background: var(--green-dim); border-color: rgba(34, 197, 94, 0.15); }
+    .status-banner.degraded { background: var(--yellow-dim); border-color: rgba(234, 179, 8, 0.15); }
+    .status-banner.down { background: var(--red-dim); border-color: rgba(239, 68, 68, 0.15); }
+    .banner-content { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1; }
+    .banner-dot-wrap { position: relative; width: 12px; height: 12px; flex-shrink: 0; }
+    .banner-dot { width: 10px; height: 10px; border-radius: 50%; position: absolute; top: 1px; left: 1px; }
+    .banner-dot-pulse { width: 12px; height: 12px; border-radius: 50%; position: absolute; top: 0; left: 0; animation: pulse 2s ease-out infinite; }
+    .operational .banner-dot { background: var(--green); }
+    .operational .banner-dot-pulse { background: var(--green); }
+    .degraded .banner-dot { background: var(--yellow); }
+    .degraded .banner-dot-pulse { background: var(--yellow); }
+    .down .banner-dot { background: var(--red); }
+    .down .banner-dot-pulse { background: var(--red); }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(2.5); opacity: 0; } }
+    .banner-text { display: flex; flex-direction: column; gap: 2px; }
+    .banner-label { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .operational .banner-label { color: var(--green); }
+    .degraded .banner-label { color: var(--yellow); }
+    .down .banner-label { color: var(--red); }
+    .banner-meta { font-size: 12px; color: var(--text-3); }
+
+    .section-header { font-size: 12px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; padding: 0 4px; }
+
+    .services { display: flex; flex-direction: column; gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 48px; border: 1px solid var(--border); }
+    .service-card { background: var(--surface); padding: 20px 24px; }
+    .service-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .service-name { font-size: 14px; font-weight: 500; color: var(--text-1); }
+    .status-badge { font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 100px; letter-spacing: 0.01em; }
+    .status-badge.up { background: var(--green-dim); color: var(--green); }
+    .status-badge.degraded { background: var(--yellow-dim); color: var(--yellow); }
+    .status-badge.down { background: var(--red-dim); color: var(--red); }
+    .status-badge.unknown { background: rgba(255,255,255,0.05); color: var(--text-3); }
+
+    .bars-container { position: relative; }
+    .bars { display: flex; gap: 2px; height: 32px; align-items: stretch; }
+    .bar { flex: 1; border-radius: 3px; min-width: 0; cursor: pointer; transition: opacity 0.12s ease, transform 0.12s ease; position: relative; }
+    .bar:hover { opacity: 0.7; transform: scaleY(1.1); transform-origin: bottom; }
+    .bar.up { background: var(--green); }
+    .bar.degraded { background: var(--yellow); }
+    .bar.down { background: var(--red); }
+    .bar.empty { background: var(--surface-2); }
+    .bars-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-4); }
+    .bars-footer-center { display: flex; align-items: center; gap: 12px; color: var(--text-3); }
+    .bars-footer-center .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--text-4); }
+
+    .tooltip { display: none; position: fixed; background: var(--surface-3); border: 1px solid var(--border-2); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 12px; color: var(--text-2); pointer-events: none; z-index: 100; white-space: nowrap; box-shadow: 0 8px 24px rgba(0,0,0,0.5); line-height: 1.6; }
+    .tooltip.visible { display: block; }
+    .tooltip-time { color: var(--text-1); font-weight: 500; }
+    .tooltip-status { display: flex; align-items: center; gap: 6px; }
+    .tooltip-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .tooltip-dot.up { background: var(--green); }
+    .tooltip-dot.degraded { background: var(--yellow); }
+    .tooltip-dot.down { background: var(--red); }
+    .tooltip-dot.empty { background: var(--text-4); }
+
+    .incidents { margin-bottom: 48px; }
+    .incidents-empty { text-align: center; padding: 32px 0; font-size: 13px; color: var(--text-4); }
+    .incident-day { margin-bottom: 24px; }
+    .incident-day:last-child { margin-bottom: 0; }
+    .incident-date { font-size: 12px; font-weight: 500; color: var(--text-3); margin-bottom: 8px; padding: 0 4px; }
+    .incident-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 18px; margin-bottom: 6px; }
+    .incident-card:last-child { margin-bottom: 0; }
+    .incident-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .incident-severity { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .incident-severity.major { background: var(--red); }
+    .incident-severity.minor { background: var(--yellow); }
+    .incident-title { font-size: 13px; font-weight: 500; color: var(--text-1); }
+
+    footer { padding: 32px 0 48px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    footer a { color: var(--text-4); text-decoration: none; font-size: 12px; transition: color 0.15s; }
+    footer a:hover { color: var(--text-3); }
+    .footer-right { font-size: 11px; color: var(--text-4); }
+
+    .loading { text-align: center; padding: 80px 0; color: var(--text-3); font-size: 13px; }
+    .loading-spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--text-3); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 520px) {
+      header { padding: 28px 0 0; }
+      .status-banner { padding: 18px 20px; margin: 24px 0; }
+      .service-card { padding: 16px 18px; }
+      .bars { height: 28px; gap: 1.5px; }
+      .banner-label { font-size: 14px; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-inner">
+        <div class="header-left">
+          <img src="https://www.telegai.com/favicon.ico" alt="TelegAI" class="header-logo">
+          <span class="header-title">TelegAI Status</span>
+        </div>
+        <div class="header-right">
+          <div class="refresh-badge">
+            <span class="refresh-dot"></span>
+            <span>Live</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div id="app">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        Loading status...
+      </div>
+    </div>
+
+    <footer>
+      <a href="https://www.telegai.com" target="_blank" rel="noopener">telegai.com</a>
+      <span class="footer-right">Auto-refreshes every 60s</span>
+    </footer>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    /* -- Config -- */
+    const OWNER = 'Tanic-Labs';
+    const REPO = 'telegai-status';
+    const UPPTIME_URL = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/history/summary.json`;
+    const COMMITS_URL = `https://api.github.com/repos/${OWNER}/${REPO}/commits`;
+
+    const SERVICES = [
+      { key: 'web', label: 'Web', name: 'Web' },
+      { key: 'database', label: 'Database', name: 'Database' },
+      { key: 'llm-open-router', label: 'LLM - OpenRouter', name: 'LLM - OpenRouter' },
+      { key: 'llm-novita-ai', label: 'LLM - Novita AI', name: 'LLM - Novita AI' },
+      { key: 'ef-angle-rotation-wavespeed', label: 'EF - Angle Rotation Wavespeed', name: 'EF - Angle Rotation Wavespeed' },
+      { key: 'ef-chatterbox-tts', label: 'EF - Chatterbox TTS', name: 'EF - Chatterbox TTS' },
+      { key: 'ef-generate-voice-candidates', label: 'EF - Generate Voice Candidates', name: 'EF - Generate Voice Candidates' },
+      { key: 'ef-generate-voice-from-candidate', label: 'EF - Generate Voice from Candidate', name: 'EF - Generate Voice from Candidate' },
+      { key: 'ef-qwen-image-edit', label: 'EF - Qwen Image Edit', name: 'EF - Qwen Image Edit' },
+      { key: 'ef-wan-video-generation', label: 'EF - Wan Video Generation', name: 'EF - Wan Video Generation' },
+    ];
+
+    const HOURS = 24;
+    const REFRESH_MS = 60_000;
+
+    /* -- Data Fetching -- */
+    async function fetchUpptime() {
+      try {
+        const r = await fetch(UPPTIME_URL);
+        return r.ok ? r.json() : [];
+      } catch { return []; }
+    }
+
+    async function fetchCommits() {
+      try {
+        const since = new Date(Date.now() - (HOURS + 1) * 3600_000).toISOString();
+        const r = await fetch(`${COMMITS_URL}?since=${since}&per_page=100`);
+        if (!r.ok) return [];
+        return r.json();
+      } catch { return []; }
+    }
+
+    async function loadAll() {
+      const [upptime, commits] = await Promise.allSettled([
+        fetchUpptime(),
+        fetchCommits(),
+      ]);
+      return {
+        upptime: upptime.status === 'fulfilled' ? upptime.value : [],
+        commits: commits.status === 'fulfilled' ? commits.value : [],
+      };
+    }
+
+    /* -- Parse Commits -- */
+    function parseStatusCommits(commits) {
+      // Pattern: " ServiceName is up/down (code in time ms)"
+      // Also handle old name: "LLM (OpenRouter)"
+      const re = /^\s*(.+?)\s+is\s+(up|down)\s+\((\d+)\s+in\s+([\d.]+)\s+ms\)\s*$/;
+      const checks = [];
+
+      for (const c of commits) {
+        const msg = c.commit?.message;
+        const date = c.commit?.author?.date || c.commit?.committer?.date;
+        if (!msg || !date) continue;
+        const m = msg.match(re);
+        if (!m) continue;
+        checks.push({
+          service: m[1].trim(),
+          status: m[2],
+          code: parseInt(m[3]),
+          ms: parseFloat(m[4]),
+          time: new Date(date),
+        });
+      }
+
+      return checks;
+    }
+
+    function buildNameToKeyMap() {
+      const map = {};
+      for (const svc of SERVICES) {
+        map[svc.name.toLowerCase()] = svc.key;
+        // Also map old names
+        if (svc.key === 'llm-open-router') map['llm (openrouter)'] = svc.key;
+      }
+      return map;
+    }
+
+    /* -- Helpers -- */
+    function resolveUptimeStatus(svc) {
+      const pct = parseFloat(svc.uptimeDay || svc.uptime || '0');
+      if (pct >= 99) return 'up';
+      if (pct >= 90) return 'degraded';
+      return 'down';
+    }
+
+    function getHourSlots() {
+      const slots = [];
+      const now = new Date();
+      for (let i = HOURS - 1; i >= 0; i--) {
+        const d = new Date(now);
+        d.setMinutes(0, 0, 0);
+        d.setHours(d.getHours() - i);
+        slots.push(d);
+      }
+      return slots;
+    }
+
+    function formatHour(d) {
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+
+    function formatHourRange(d) {
+      const end = new Date(d);
+      end.setHours(end.getHours() + 1);
+      return `${formatHour(d)} \u2013 ${formatHour(end)}`;
+    }
+
+    function statusLabel(s) {
+      if (s === 'up') return 'Operational';
+      if (s === 'degraded') return 'Degraded';
+      if (s === 'down') return 'Down';
+      return 'No data';
+    }
+
+    function overallLabel(s) {
+      if (s === 'operational') return 'All Systems Operational';
+      if (s === 'degraded') return 'Experiencing Degraded Performance';
+      return 'Some Systems Down';
+    }
+
+    /* -- Build Service Data -- */
+    function buildServiceData(data) {
+      const uptimeMap = {};
+      for (const svc of data.upptime) {
+        uptimeMap[svc.slug] = svc;
+      }
+
+      const nameToKey = buildNameToKeyMap();
+      const statusChecks = parseStatusCommits(data.commits);
+      const slots = getHourSlots();
+
+      // Group checks by service key
+      const checksByService = {};
+      for (const check of statusChecks) {
+        const key = nameToKey[check.service.toLowerCase()];
+        if (!key) continue;
+        if (!checksByService[key]) checksByService[key] = [];
+        checksByService[key].push(check);
+      }
+
+      // Sort checks by time ascending for each service
+      for (const key of Object.keys(checksByService)) {
+        checksByService[key].sort((a, b) => a.time - b.time);
+      }
+
+      const services = [];
+      for (const svc of SERVICES) {
+        const ut = uptimeMap[svc.key];
+        const checks = checksByService[svc.key] || [];
+
+        let currentStatus = 'unknown';
+        let responseTime = null;
+        let uptimePct = null;
+
+        if (ut) {
+          currentStatus = resolveUptimeStatus(ut);
+          responseTime = ut.time || null;
+          uptimePct = parseFloat(ut.uptimeDay || ut.uptime || '100').toFixed(2);
+        }
+
+        // Build hourly bars from commit history
+        const hours = [];
+        let hasBarData = checks.length > 0;
+
+        for (const slot of slots) {
+          const slotEnd = new Date(slot);
+          slotEnd.setHours(slotEnd.getHours() + 1);
+
+          // Find checks within this hour
+          const hourChecks = checks.filter(c => c.time >= slot && c.time < slotEnd);
+
+          if (hourChecks.length > 0) {
+            // Use the latest check in this hour
+            const latest = hourChecks[hourChecks.length - 1];
+            const avgMs = Math.round(
+              hourChecks.reduce((sum, c) => sum + c.ms, 0) / hourChecks.length
+            );
+            hours.push({
+              slot,
+              status: latest.status,
+              checks: hourChecks.length,
+              avgMs,
+            });
+          } else {
+            // No checks in this hour - find the most recent check before this slot
+            const prior = checks.filter(c => c.time < slot);
+            if (prior.length > 0) {
+              const lastKnown = prior[prior.length - 1];
+              hours.push({ slot, status: lastKnown.status, checks: 0, avgMs: null });
+            } else {
+              hours.push({ slot, status: 'empty', checks: 0, avgMs: null });
+            }
+          }
+        }
+
+        services.push({
+          key: svc.key,
+          label: svc.label,
+          status: currentStatus,
+          uptimePct,
+          avgMs: responseTime,
+          hours,
+          hasBarData,
+        });
+      }
+
+      return services;
+    }
+
+    /* -- Render -- */
+    function render(data) {
+      const app = document.getElementById('app');
+      const services = buildServiceData(data);
+
+      const statuses = services.map(s => s.status);
+      const overall = statuses.includes('down') ? 'down'
+        : statuses.includes('degraded') ? 'degraded' : 'operational';
+
+      let html = '';
+
+      // Banner
+      html += `
+        <div class="status-banner ${overall}">
+          <div class="banner-content">
+            <div class="banner-dot-wrap">
+              <div class="banner-dot-pulse"></div>
+              <div class="banner-dot"></div>
+            </div>
+            <div class="banner-text">
+              <span class="banner-label">${overallLabel(overall)}</span>
+              <span class="banner-meta">Monitoring ${services.length} services</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Services
+      html += '<div class="section-header">Uptime &mdash; Last 24 hours</div>';
+      html += '<div class="services">';
+
+      for (const svc of services) {
+        html += `<div class="service-card">`;
+        html += `<div class="service-top">`;
+        html += `<span class="service-name">${svc.label}</span>`;
+        html += `<span class="status-badge ${svc.status}">${statusLabel(svc.status)}</span>`;
+        html += `</div>`;
+
+        html += `<div class="bars-container">`;
+
+        if (svc.hasBarData) {
+          html += `<div class="bars">`;
+          for (const h of svc.hours) {
+            const detail = h.checks > 0
+              ? `${h.checks} check${h.checks > 1 ? 's' : ''}${h.avgMs ? ' \u00b7 ' + h.avgMs + 'ms' : ''}`
+              : (h.status !== 'empty' ? 'No change' : 'No data');
+            html += `<div class="bar ${h.status}"
+              data-time="${formatHourRange(h.slot)}"
+              data-status="${h.status}"
+              data-detail="${detail}"></div>`;
+          }
+          html += `</div>`;
+          html += `<div class="bars-footer">`;
+          html += `<span>24h ago</span>`;
+          html += `<div class="bars-footer-center">`;
+          if (svc.uptimePct !== null) html += `<span>${svc.uptimePct}% uptime</span>`;
+          if (svc.uptimePct !== null && svc.avgMs) html += `<span class="sep"></span>`;
+          if (svc.avgMs) html += `<span>${svc.avgMs}ms avg</span>`;
+          html += `</div>`;
+          html += `<span>Now</span>`;
+          html += `</div>`;
+        } else {
+          html += `<div class="bars-footer">`;
+          html += `<span></span>`;
+          html += `<div class="bars-footer-center">`;
+          if (svc.uptimePct !== null) html += `<span>${svc.uptimePct}% uptime</span>`;
+          if (svc.uptimePct !== null && svc.avgMs) html += `<span class="sep"></span>`;
+          if (svc.avgMs) html += `<span>${svc.avgMs}ms avg</span>`;
+          html += `</div>`;
+          html += `<span></span>`;
+          html += `</div>`;
+        }
+
+        html += `</div>`;
+        html += `</div>`;
+      }
+
+      html += '</div>';
+
+      // Incidents
+      html += '<div class="incidents">';
+      html += '<div class="section-header">Recent Incidents</div>';
+
+      const incidents = [];
+      for (const ut of data.upptime) {
+        if (ut.dailyMinutesDown) {
+          for (const [date, minutes] of Object.entries(ut.dailyMinutesDown)) {
+            if (minutes > 0) {
+              incidents.push({ label: ut.name, date, minutes });
+            }
+          }
+        }
+      }
+
+      if (incidents.length === 0) {
+        html += '<div class="incidents-empty">No incidents in the last 7 days</div>';
+      } else {
+        const byDay = {};
+        for (const inc of incidents) {
+          if (!byDay[inc.date]) byDay[inc.date] = [];
+          byDay[inc.date].push(inc);
+        }
+        for (const day of Object.keys(byDay).sort().reverse()) {
+          const d = new Date(day + 'T00:00:00');
+          const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+          html += `<div class="incident-day">`;
+          html += `<div class="incident-date">${label}</div>`;
+          for (const inc of byDay[day]) {
+            const severity = inc.minutes > 30 ? 'major' : 'minor';
+            html += `<div class="incident-card">`;
+            html += `<div class="incident-header">`;
+            html += `<span class="incident-severity ${severity}"></span>`;
+            html += `<span class="incident-title">${inc.label} &mdash; ${inc.minutes} min downtime</span>`;
+            html += `</div>`;
+            html += `</div>`;
+          }
+          html += `</div>`;
+        }
+      }
+
+      html += '</div>';
+
+      app.innerHTML = html;
+      setupTooltips();
+    }
+
+    /* -- Tooltips -- */
+    function setupTooltips() {
+      const tooltip = document.getElementById('tooltip');
+      const bars = document.querySelectorAll('.bar');
+
+      bars.forEach(bar => {
+        bar.addEventListener('mouseenter', () => {
+          const time = bar.dataset.time;
+          const status = bar.dataset.status;
+          const detail = bar.dataset.detail;
+
+          tooltip.innerHTML = `
+            <div class="tooltip-time">${time}</div>
+            <div class="tooltip-status">
+              <span class="tooltip-dot ${status}"></span>
+              ${statusLabel(status)}
+            </div>
+            <div>${detail}</div>
+          `;
+          tooltip.classList.add('visible');
+        });
+
+        bar.addEventListener('mousemove', (e) => {
+          const tw = tooltip.offsetWidth;
+          const vw = window.innerWidth;
+          let left = e.clientX - tw / 2;
+          if (left < 8) left = 8;
+          if (left + tw > vw - 8) left = vw - tw - 8;
+          tooltip.style.left = left + 'px';
+          tooltip.style.top = (e.clientY - tooltip.offsetHeight - 12) + 'px';
+        });
+
+        bar.addEventListener('mouseleave', () => {
+          tooltip.classList.remove('visible');
+        });
+      });
+    }
+
+    /* -- Init -- */
+    async function init() {
+      const data = await loadAll();
+      render(data);
+      setInterval(async () => {
+        const fresh = await loadAll();
+        render(fresh);
+      }, REFRESH_MS);
+    }
+
+    init();
+  </script>
+</body>
+</html>
