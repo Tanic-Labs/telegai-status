@@ -8,58 +8,12 @@ sites:
       - 200
       - 301
 
-  - name: Image Rotation
-    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/angle-rotation-wavespeed
-    expectedStatusCodes:
-      - 200
-      - 500
-
-  - name: Audio Generation
-    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/chatterbox-tts
-    expectedStatusCodes:
-      - 200
-      - 404
-
-  - name: Voice Generator
-    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/generate-voice-candidates
-    expectedStatusCodes:
-      - 200
-      - 405
-
-  - name: Voice Creator
-    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/generate-voice-from-candidate
-    expectedStatusCodes:
-      - 200
-      - 405
-
-  - name: Image Generation
-    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/qwen-image-edit
-    expectedStatusCodes:
-      - 200
-      - 400
-
-  - name: Video Generation
-    url: https://ywqesktuqvgsmrgraors.supabase.co/functions/v1/wan-video-generation
-    expectedStatusCodes:
-      - 200
-      - 400
-
   - name: Database
     url: https://ywqesktuqvgsmrgraors.supabase.co/rest/v1/
     expectedStatusCodes:
       - 200
       - 401
 
-  - name: Standard LLM
-    url: https://openrouter.ai/api/v1/models
-    expectedStatusCodes:
-      - 200
-
-  - name: Context & Reasoning
-    url: https://api.novita.ai/v3/openai/models
-    expectedStatusCodes:
-      - 200
-      - 401
 
 # Custom status page deployed to gh-pages manually — do not regenerate
 # status-website: disabled

@@ -1,0 +1,103 @@
+name: Edge Functions Status Check
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check EF status via logs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT || github.token }}
+
+      - name: Query Supabase logs and commit status
+        env:
+          SUPABASE_PAT: ${{ secrets.SUPABASE_PAT }}
+          PROJECT_REF: ywqesktuqvgsmrgraors
+        run: |
+          set -e
+
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          ONE_HOUR_AGO=$(date -u -d "1 hour ago" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u -v-1H +"%Y-%m-%dT%H:%M:%SZ")
+
+          check_function() {
+            local FUNC_NAME="$1"
+            local DISPLAY_NAME="$2"
+
+            # Build WHERE clause supporting multiple function names (comma-separated)
+            PATH_FILTER=""
+            IFS=',' read -ra FUNCS <<< "$FUNC_NAME"
+            for i in "${!FUNCS[@]}"; do
+              if [ "$i" -gt 0 ]; then PATH_FILTER="${PATH_FILTER} or "; fi
+              PATH_FILTER="${PATH_FILTER}m.path like '%/functions/v1/${FUNCS[$i]}'"
+            done
+
+            SQL="select coalesce(r.status_code, 0) as status_code, count(*) as cnt from function_edge_logs t cross join unnest(t.metadata) as m cross join unnest(m.response) as r where (${PATH_FILTER}) and t.timestamp >= '${ONE_HOUR_AGO}' and t.timestamp <= '${NOW}' group by r.status_code"
+
+            RESPONSE=$(curl -s -w "\n%{http_code}" \
+              -H "Authorization: Bearer ${SUPABASE_PAT}" \
+              "https://api.supabase.com/v1/projects/${PROJECT_REF}/analytics/endpoints/logs.all/query" \
+              --data-urlencode "sql=${SQL}" \
+              --data-urlencode "iso_timestamp_start=${ONE_HOUR_AGO}" \
+              --data-urlencode "iso_timestamp_end=${NOW}" \
+              -G)
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+
+            if [ "$HTTP_CODE" != "200" ]; then
+              echo "API error for ${FUNC_NAME}: HTTP ${HTTP_CODE}"
+              echo "${BODY}"
+              return 1
+            fi
+
+            TOTAL=$(echo "$BODY" | jq '[.result[]?.cnt // 0] | add // 0')
+            ERRORS=$(echo "$BODY" | jq '[.result[]? | select(.status_code >= 400) | .cnt] | add // 0')
+
+            if [ "$TOTAL" -eq 0 ]; then
+              echo "No invocations for ${FUNC_NAME} in the last hour"
+              ERROR_RATE=0
+            else
+              ERROR_RATE=$(echo "scale=2; ${ERRORS} * 100 / ${TOTAL}" | bc)
+            fi
+
+            echo "${FUNC_NAME}: ${TOTAL} invocations, ${ERRORS} errors, ${ERROR_RATE}% error rate"
+
+            # Determine status based on error rate thresholds
+            ERROR_INT=$(echo "$ERROR_RATE" | cut -d. -f1)
+            ERROR_INT=${ERROR_INT:-0}
+
+            if [ "$ERROR_INT" -lt 15 ]; then
+              STATUS="up"
+              EMOJI="🟩"
+            elif [ "$ERROR_INT" -lt 30 ]; then
+              STATUS="degraded"
+              EMOJI="🟨"
+            else
+              STATUS="down"
+              EMOJI="🟥"
+            fi
+
+            # Commit in Upptime format
+            git config user.name "Upptime Bot"
+            git config user.email "upptime@telegai.com"
+
+            COMMIT_MSG="${EMOJI} ${DISPLAY_NAME} is ${STATUS} (${ERROR_RATE}% error rate, ${TOTAL} invocations)"
+            git commit --allow-empty -m "${COMMIT_MSG}"
+
+            echo "Committed: ${COMMIT_MSG}"
+          }
+
+          check_function "angle-rotation-wavespeed" "Image Rotation"
+          check_function "chatterbox-tts" "Audio Generation"
+          check_function "generate-voice-candidates,generate-voice-from-candidate" "Voice Generation"
+          check_function "qwen-image-edit" "Image Generation"
+          check_function "wan-video-generation" "Video Generation"
+          check_function "chat" "Standard LLM"
+          check_function "chat-pro" "Context & Reasoning"
+
+          git push
