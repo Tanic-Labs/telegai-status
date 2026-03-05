@@ -8,12 +8,6 @@ sites:
       - 200
       - 301
 
-  - name: Database
-    url: https://ywqesktuqvgsmrgraors.supabase.co/rest/v1/
-    expectedStatusCodes:
-      - 200
-      - 401
-
 
 # Custom status page deployed to gh-pages manually — do not regenerate
 # status-website: disabled
