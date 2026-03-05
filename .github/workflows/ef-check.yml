@@ -21,8 +21,6 @@ jobs:
           SUPABASE_URL: https://ywqesktuqvgsmrgraors.supabase.co
           PROJECT_REF: ywqesktuqvgsmrgraors
         run: |
-          set -e
-
           NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           ONE_HOUR_AGO=$(date -u -d "1 hour ago" +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u -v-1H +"%Y-%m-%dT%H:%M:%SZ")
 
