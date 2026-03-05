@@ -17,6 +17,8 @@ jobs:
       - name: Query Supabase logs and commit status
         env:
           SUPABASE_PAT: ${{ secrets.SUPABASE_PAT }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_URL: https://ywqesktuqvgsmrgraors.supabase.co
           PROJECT_REF: ywqesktuqvgsmrgraors
         run: |
           set -e
@@ -27,14 +29,16 @@ jobs:
           git config user.name "Upptime Bot"
           git config user.email "upptime@telegai.com"
 
-          # check_service TABLE DISPLAY_NAME ERROR_THRESHOLD PATTERN1 [PATTERN2 ...]
+          # check_service TABLE SERVICE_KEY DISPLAY_NAME ERROR_THRESHOLD PATTERN1 [PATTERN2 ...]
           # TABLE: edge_logs or function_edge_logs
+          # SERVICE_KEY: key used in uptime_checks table
           # ERROR_THRESHOLD: minimum status code considered an error (400 or 500)
           check_service() {
             local TABLE="$1"
-            local DISPLAY_NAME="$2"
-            local ERROR_THRESHOLD="$3"
-            shift 3
+            local SERVICE_KEY="$2"
+            local DISPLAY_NAME="$3"
+            local ERROR_THRESHOLD="$4"
+            shift 4
 
             # Build regexp filter from remaining args
             REGEXP_FILTER=""
@@ -96,19 +100,27 @@ jobs:
             COMMIT_MSG="${EMOJI} ${DISPLAY_NAME} is ${STATUS} (${ERROR_RATE}% error rate, ${TOTAL} invocations)"
             git commit --allow-empty -m "${COMMIT_MSG}"
 
+            # Insert into Supabase uptime_checks
+            curl -s -o /dev/null \
+              -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "{\"service\":\"${SERVICE_KEY}\",\"status\":\"${STATUS}\",\"error_rate\":${ERROR_RATE},\"total_invocations\":${TOTAL}}" \
+              "${SUPABASE_URL}/rest/v1/uptime_checks"
+
             echo "Committed: ${COMMIT_MSG}"
           }
 
           # Edge Functions (error threshold: >= 400)
-          check_service function_edge_logs "Image Rotation" 400 '/functions/v1/angle-rotation-wavespeed$'
-          check_service function_edge_logs "Audio Generation" 400 '/functions/v1/chatterbox-tts$'
-          check_service function_edge_logs "Voice Generation" 400 '/functions/v1/generate-voice-candidates$' '/functions/v1/generate-voice-from-candidate$'
-          check_service function_edge_logs "Image Generation" 400 '/functions/v1/qwen-image-edit$'
-          check_service function_edge_logs "Video Generation" 400 '/functions/v1/wan-video-generation$'
-          check_service function_edge_logs "Context" 400 '/functions/v1/chat$'
-          check_service function_edge_logs "Quality" 400 '/functions/v1/chat-pro$'
+          check_service function_edge_logs "image-rotation"    "Image Rotation"    400 '/functions/v1/angle-rotation-wavespeed$'
+          check_service function_edge_logs "audio-generation"  "Audio Generation"  400 '/functions/v1/chatterbox-tts$'
+          check_service function_edge_logs "voice-generation"  "Voice Generation"  400 '/functions/v1/generate-voice-candidates$' '/functions/v1/generate-voice-from-candidate$'
+          check_service function_edge_logs "image-generation"  "Image Generation"  400 '/functions/v1/qwen-image-edit$'
+          check_service function_edge_logs "video-generation"  "Video Generation"  400 '/functions/v1/wan-video-generation$'
+          check_service function_edge_logs "context"           "Context"           400 '/functions/v1/chat$'
+          check_service function_edge_logs "quality"           "Quality"           400 '/functions/v1/chat-pro$'
 
           # Database (error threshold: >= 500, only server errors)
-          check_service edge_logs "Database" 500 '/rest/v1/'
+          check_service edge_logs "database" "Database" 500 '/rest/v1/'
 
           git push
