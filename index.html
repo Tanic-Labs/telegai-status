@@ -186,8 +186,8 @@
     const SERVICES = [
       { key: 'web', label: 'Web', name: 'Web' },
       { key: 'database', label: 'Database', name: 'Database' },
-      { key: 'standard-llm', label: 'Standard LLM', name: 'Standard LLM' },
-      { key: 'context-reasoning', label: 'Context & Reasoning', name: 'Context & Reasoning' },
+      { key: 'context', label: 'Context', name: 'Context' },
+      { key: 'quality', label: 'Quality', name: 'Quality' },
       { key: 'image-rotation', label: 'Image Rotation', name: 'Image Rotation' },
       { key: 'audio-generation', label: 'Audio Generation', name: 'Audio Generation' },
       { key: 'voice-generation', label: 'Voice Generation', name: 'Voice Generation' },
@@ -276,6 +276,8 @@
       // Map old commit names to current keys
       map['voice generator'] = 'voice-generation';
       map['voice creator'] = 'voice-generation';
+      map['standard llm'] = 'context';
+      map['context & reasoning'] = 'quality';
       return map;
     }
 
