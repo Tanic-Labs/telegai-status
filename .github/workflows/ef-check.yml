@@ -114,10 +114,10 @@ jobs:
             local HTTP_CODE
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "https://www.telegai.com/")
 
-            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+            if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 400 ]]; then
               STATUS="up"
               EMOJI="🟩"
-            elif [ "$HTTP_CODE" -ge 400 ] && [ "$HTTP_CODE" -lt 500 ]; then
+            elif [[ "$HTTP_CODE" -ge 400 && "$HTTP_CODE" -lt 500 ]]; then
               STATUS="degraded"
               EMOJI="🟨"
             else
