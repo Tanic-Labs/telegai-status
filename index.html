@@ -190,8 +190,7 @@
       { key: 'context-reasoning', label: 'Context & Reasoning', name: 'Context & Reasoning' },
       { key: 'image-rotation', label: 'Image Rotation', name: 'Image Rotation' },
       { key: 'audio-generation', label: 'Audio Generation', name: 'Audio Generation' },
-      { key: 'voice-generator', label: 'Voice Generator', name: 'Voice Generator' },
-      { key: 'voice-creator', label: 'Voice Creator', name: 'Voice Creator' },
+      { key: 'voice-generation', label: 'Voice Generation', name: 'Voice Generation' },
       { key: 'image-generation', label: 'Image Generation', name: 'Image Generation' },
       { key: 'video-generation', label: 'Video Generation', name: 'Video Generation' },
     ];
@@ -229,24 +228,41 @@
 
     /* -- Parse Commits -- */
     function parseStatusCommits(commits) {
-      // Pattern: " ServiceName is up/down (code in time ms)"
-      // Also handle old name: "LLM (OpenRouter)"
-      const re = /^\s*(.+?)\s+is\s+(up|down)\s+\((\d+)\s+in\s+([\d.]+)\s+ms\)\s*$/;
+      // Upptime format: "ServiceName is up/down (code in time ms)"
+      const reUpptime = /^\s*(.+?)\s+is\s+(up|down)\s+\((\d+)\s+in\s+([\d.]+)\s+ms\)\s*$/;
+      // EF check format: "ServiceName is up/down/degraded (X% error rate, Y invocations)"
+      const reEF = /^\s*(.+?)\s+is\s+(up|down|degraded)\s+\(([\d.]+)%\s+error rate,\s+(\d+)\s+invocations\)\s*$/;
       const checks = [];
 
       for (const c of commits) {
         const msg = c.commit?.message;
         const date = c.commit?.author?.date || c.commit?.committer?.date;
         if (!msg || !date) continue;
-        const m = msg.match(re);
-        if (!m) continue;
-        checks.push({
-          service: m[1].trim(),
-          status: m[2],
-          code: parseInt(m[3]),
-          ms: parseFloat(m[4]),
-          time: new Date(date),
-        });
+
+        const m1 = msg.match(reUpptime);
+        if (m1) {
+          checks.push({
+            service: m1[1].trim(),
+            status: m1[2],
+            code: parseInt(m1[3]),
+            ms: parseFloat(m1[4]),
+            time: new Date(date),
+          });
+          continue;
+        }
+
+        const m2 = msg.match(reEF);
+        if (m2) {
+          checks.push({
+            service: m2[1].trim(),
+            status: m2[2],
+            code: null,
+            ms: null,
+            errorRate: parseFloat(m2[3]),
+            invocations: parseInt(m2[4]),
+            time: new Date(date),
+          });
+        }
       }
 
       return checks;
@@ -256,9 +272,10 @@
       const map = {};
       for (const svc of SERVICES) {
         map[svc.name.toLowerCase()] = svc.key;
-        // Also map old names
-        if (svc.key === 'llm-open-router') map['llm (openrouter)'] = svc.key;
       }
+      // Map old commit names to current keys
+      map['voice generator'] = 'voice-generation';
+      map['voice creator'] = 'voice-generation';
       return map;
     }
 
@@ -359,13 +376,16 @@
           if (hourChecks.length > 0) {
             // Use the latest check in this hour
             const latest = hourChecks[hourChecks.length - 1];
-            const avgMs = Math.round(
-              hourChecks.reduce((sum, c) => sum + c.ms, 0) / hourChecks.length
-            );
+            const msChecks = hourChecks.filter(c => c.ms != null);
+            const avgMs = msChecks.length > 0
+              ? Math.round(msChecks.reduce((sum, c) => sum + c.ms, 0) / msChecks.length)
+              : null;
+            const upChecks = hourChecks.filter(c => c.status === 'up').length;
             hours.push({
               slot,
               status: latest.status,
               checks: hourChecks.length,
+              upChecks,
               avgMs,
             });
           } else {
@@ -438,7 +458,7 @@
           html += `<div class="bars">`;
           for (const h of svc.hours) {
             const detail = h.checks > 0
-              ? `${h.checks} check${h.checks > 1 ? 's' : ''}${h.avgMs ? ' \u00b7 ' + h.avgMs + 'ms' : ''}`
+              ? `${h.upChecks}/${h.checks} checks correct${h.avgMs ? ' \u00b7 ' + h.avgMs + 'ms' : ''}`
               : (h.status !== 'empty' ? 'No change' : 'No data');
             html += `<div class="bar ${h.status}"
               data-time="${formatHourRange(h.slot)}"
