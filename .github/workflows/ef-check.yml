@@ -109,6 +109,37 @@ jobs:
             echo "Committed: ${COMMIT_MSG}"
           }
 
+          # Web (simple HTTP check)
+          check_web() {
+            local HTTP_CODE
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -L "https://www.telegai.com/")
+
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 400 ]; then
+              STATUS="up"
+              EMOJI="🟩"
+            elif [ "$HTTP_CODE" -ge 400 ] && [ "$HTTP_CODE" -lt 500 ]; then
+              STATUS="degraded"
+              EMOJI="🟨"
+            else
+              STATUS="down"
+              EMOJI="🟥"
+            fi
+
+            COMMIT_MSG="${EMOJI} Web is ${STATUS} (HTTP ${HTTP_CODE})"
+            git commit --allow-empty -m "${COMMIT_MSG}"
+
+            curl -s -o /dev/null \
+              -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "{\"service\":\"web\",\"status\":\"${STATUS}\",\"error_rate\":0,\"total_invocations\":1}" \
+              "${SUPABASE_URL}/rest/v1/uptime_checks"
+
+            echo "Committed: ${COMMIT_MSG}"
+          }
+
+          check_web
+
           # Edge Functions (error threshold: >= 400)
           check_service function_edge_logs "image-rotation"    "Image Rotation"    400 '/functions/v1/angle-rotation-wavespeed$'
           check_service function_edge_logs "audio-generation"  "Audio Generation"  400 '/functions/v1/chatterbox-tts$'
