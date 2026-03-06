@@ -74,7 +74,7 @@ jobs:
               echo "No invocations for ${DISPLAY_NAME} in the last hour"
               ERROR_RATE=0
             else
-              ERROR_RATE=$(echo "scale=2; ${ERRORS} * 100 / ${TOTAL}" | bc)
+              ERROR_RATE=$(echo "scale=2; ${ERRORS} * 100 / ${TOTAL}" | bc | sed 's/^\./0./')
             fi
 
             echo "${DISPLAY_NAME}: ${TOTAL} total, ${ERRORS} errors (>=${ERROR_THRESHOLD}), ${ERROR_RATE}% error rate"
