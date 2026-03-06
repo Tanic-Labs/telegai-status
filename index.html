@@ -130,6 +130,16 @@
     .incident-severity.minor { background: var(--yellow); }
     .incident-title { font-size: 13px; font-weight: 500; color: var(--text-1); }
 
+    .legend { margin-bottom: 48px; }
+    .legend-items { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .legend-dot.up { background: var(--green); }
+    .legend-dot.degraded { background: var(--yellow); }
+    .legend-dot.down { background: var(--red); }
+    .legend-dot.cold { background: var(--blue); }
+    .legend-dot.empty { background: var(--surface-2); }
+
     footer { padding: 32px 0 48px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     footer a { color: var(--text-4); text-decoration: none; font-size: 12px; transition: color 0.15s; }
     footer a:hover { color: var(--text-3); }
@@ -464,6 +474,20 @@
       }
 
       html += '</div>';
+
+      // Color legend
+      html += `
+        <div class="legend">
+          <div class="section-header">Color Code</div>
+          <div class="legend-items">
+            <div class="legend-item"><span class="legend-dot up"></span> Operational</div>
+            <div class="legend-item"><span class="legend-dot degraded"></span> Degraded</div>
+            <div class="legend-item"><span class="legend-dot down"></span> Down</div>
+            <div class="legend-item"><span class="legend-dot cold"></span> Cold</div>
+            <div class="legend-item"><span class="legend-dot empty"></span> No data</div>
+          </div>
+        </div>
+      `;
 
       app.innerHTML = html;
       setupTooltips();
