@@ -27,6 +27,8 @@
       --yellow-dim: rgba(234, 179, 8, 0.12);
       --red: #ef4444;
       --red-dim: rgba(239, 68, 68, 0.12);
+      --blue: #3b82f6;
+      --blue-dim: rgba(59, 130, 246, 0.12);
       --border: rgba(255,255,255,0.06);
       --border-2: rgba(255,255,255,0.1);
       --radius: 12px;
@@ -88,6 +90,7 @@
     .status-badge.up { background: var(--green-dim); color: var(--green); }
     .status-badge.degraded { background: var(--yellow-dim); color: var(--yellow); }
     .status-badge.down { background: var(--red-dim); color: var(--red); }
+    .status-badge.cold { background: var(--blue-dim); color: var(--blue); }
     .status-badge.unknown { background: rgba(255,255,255,0.05); color: var(--text-3); }
 
     .bars-container { position: relative; }
@@ -97,6 +100,7 @@
     .bar.up { background: var(--green); }
     .bar.degraded { background: var(--yellow); }
     .bar.down { background: var(--red); }
+    .bar.cold { background: var(--blue); }
     .bar.empty { background: var(--surface-2); }
     .bars-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-4); }
     .bars-footer-center { display: flex; align-items: center; gap: 12px; color: var(--text-3); }
@@ -110,6 +114,7 @@
     .tooltip-dot.up { background: var(--green); }
     .tooltip-dot.degraded { background: var(--yellow); }
     .tooltip-dot.down { background: var(--red); }
+    .tooltip-dot.cold { background: var(--blue); }
     .tooltip-dot.empty { background: var(--text-4); }
 
     .incidents { margin-bottom: 48px; }
@@ -250,6 +255,7 @@
     function statusLabel(s) {
       if (s === 'up') return 'Operational';
       if (s === 'degraded') return 'Degraded';
+      if (s === 'cold') return 'Cold';
       if (s === 'down') return 'Down';
       return 'No data';
     }
