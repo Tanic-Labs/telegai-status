@@ -148,6 +148,7 @@ jobs:
           check_service function_edge_logs "video-generation"  "Video Generation"  400 '/functions/v1/wan-video-generation$'
           check_service function_edge_logs "context"           "Context"           400 '/functions/v1/chat$'
           check_service function_edge_logs "quality"           "Quality"           400 '/functions/v1/chat-pro$'
+          check_service function_edge_logs "reasoning"         "Reasoning"         400 '/functions/v1/chat-deepthink$'
 
           # Database (error threshold: >= 500, only server errors)
           check_service edge_logs "database" "Database" 500 '/rest/v1/'
