@@ -265,10 +265,14 @@
       const slots = getHourSlots();
 
       // Index hourly data by service + hour
+      // Normalize to YYYY-MM-DDTHH to avoid millisecond/format mismatches
+      function hourKey(service, dateStr) {
+        const d = new Date(dateStr);
+        return `${service}:${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}T${String(d.getUTCHours()).padStart(2,'0')}`;
+      }
       const hourlyMap = {};
       for (const row of data.hourly) {
-        const key = `${row.service}:${new Date(row.hour).toISOString()}`;
-        hourlyMap[key] = row;
+        hourlyMap[hourKey(row.service, row.hour)] = row;
       }
 
       // Index current status by service
@@ -289,8 +293,7 @@
         let correctChecks = 0;
 
         for (const slot of slots) {
-          const key = `${svc.key}:${slot}`;
-          const h = hourlyMap[key];
+          const h = hourlyMap[hourKey(svc.key, slot)];
           const isCurrentHour = slot === currentHourISO;
 
           if (h) {
