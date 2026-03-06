@@ -155,4 +155,5 @@ jobs:
           # Database (error threshold: >= 500, only server errors)
           check_service edge_logs "database" "Database" 500 '/rest/v1/'
 
-          git push
+          git pull --rebase origin main || true
+          git push || true
