@@ -90,7 +90,7 @@
     .status-badge.up { background: var(--green-dim); color: var(--green); }
     .status-badge.degraded { background: var(--yellow-dim); color: var(--yellow); }
     .status-badge.down { background: var(--red-dim); color: var(--red); }
-    .status-badge.cold { background: var(--blue-dim); color: var(--blue); }
+    .status-badge.cold { background: var(--green-dim); color: var(--green); }
     .status-badge.unknown { background: rgba(255,255,255,0.05); color: var(--text-3); }
 
     .bars-container { position: relative; }
@@ -265,7 +265,7 @@
     function statusLabel(s) {
       if (s === 'up') return 'Operational';
       if (s === 'degraded') return 'Degraded';
-      if (s === 'cold') return 'Cold';
+      if (s === 'cold') return 'Operational';
       if (s === 'down') return 'Down';
       return 'No data';
     }
@@ -483,7 +483,7 @@
             <div class="legend-item"><span class="legend-dot up"></span> Operational</div>
             <div class="legend-item"><span class="legend-dot degraded"></span> Degraded</div>
             <div class="legend-item"><span class="legend-dot down"></span> Down</div>
-            <div class="legend-item"><span class="legend-dot cold"></span> Cold</div>
+            <div class="legend-item"><span class="legend-dot cold"></span> Cold (low traffic)</div>
             <div class="legend-item"><span class="legend-dot empty"></span> No data</div>
           </div>
         </div>
