@@ -27,6 +27,8 @@
       --yellow-dim: rgba(234, 179, 8, 0.12);
       --red: #ef4444;
       --red-dim: rgba(239, 68, 68, 0.12);
+      --blue: #3b82f6;
+      --blue-dim: rgba(59, 130, 246, 0.12);
       --border: rgba(255,255,255,0.06);
       --border-2: rgba(255,255,255,0.1);
       --radius: 12px;
@@ -88,6 +90,7 @@
     .status-badge.up { background: var(--green-dim); color: var(--green); }
     .status-badge.degraded { background: var(--yellow-dim); color: var(--yellow); }
     .status-badge.down { background: var(--red-dim); color: var(--red); }
+    .status-badge.cold { background: var(--green-dim); color: var(--green); }
     .status-badge.unknown { background: rgba(255,255,255,0.05); color: var(--text-3); }
 
     .bars-container { position: relative; }
@@ -97,6 +100,7 @@
     .bar.up { background: var(--green); }
     .bar.degraded { background: var(--yellow); }
     .bar.down { background: var(--red); }
+    .bar.cold { background: var(--green); }
     .bar.empty { background: var(--surface-2); }
     .bars-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 11px; color: var(--text-4); }
     .bars-footer-center { display: flex; align-items: center; gap: 12px; color: var(--text-3); }
@@ -110,6 +114,7 @@
     .tooltip-dot.up { background: var(--green); }
     .tooltip-dot.degraded { background: var(--yellow); }
     .tooltip-dot.down { background: var(--red); }
+    .tooltip-dot.cold { background: var(--green); }
     .tooltip-dot.empty { background: var(--text-4); }
 
     .incidents { margin-bottom: 48px; }
@@ -124,6 +129,16 @@
     .incident-severity.major { background: var(--red); }
     .incident-severity.minor { background: var(--yellow); }
     .incident-title { font-size: 13px; font-weight: 500; color: var(--text-1); }
+
+    .legend { margin-bottom: 48px; }
+    .legend-items { display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+    .legend-dot.up { background: var(--green); }
+    .legend-dot.degraded { background: var(--yellow); }
+    .legend-dot.down { background: var(--red); }
+    .legend-dot.cold { background: var(--blue); }
+    .legend-dot.empty { background: var(--surface-2); }
 
     footer { padding: 32px 0 48px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
     footer a { color: var(--text-4); text-decoration: none; font-size: 12px; transition: color 0.15s; }
@@ -178,98 +193,51 @@
 
   <script>
     /* -- Config -- */
-    const OWNER = 'Tanic-Labs';
-    const REPO = 'telegai-status';
-    const UPPTIME_URL = `https://raw.githubusercontent.com/${OWNER}/${REPO}/main/history/summary.json`;
-    const COMMITS_URL = `https://api.github.com/repos/${OWNER}/${REPO}/commits`;
+    const SUPABASE_URL = 'https://ywqesktuqvgsmrgraors.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl3cWVza3R1cXZnc21yZ3Jhb3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAxNzM4MzgsImV4cCI6MjAxNTc0OTgzOH0.TkNvW9CGa9Z3xzoPiSS2bQS9aDWyU_thaWO3PVFN7T0';
 
     const SERVICES = [
-      { key: 'web', label: 'Web', name: 'Web' },
-      { key: 'database', label: 'Database', name: 'Database' },
-      { key: 'standard-llm', label: 'Standard LLM', name: 'Standard LLM' },
-      { key: 'context-reasoning', label: 'Context & Reasoning', name: 'Context & Reasoning' },
-      { key: 'image-rotation', label: 'Image Rotation', name: 'Image Rotation' },
-      { key: 'audio-generation', label: 'Audio Generation', name: 'Audio Generation' },
-      { key: 'voice-generator', label: 'Voice Generator', name: 'Voice Generator' },
-      { key: 'voice-creator', label: 'Voice Creator', name: 'Voice Creator' },
-      { key: 'image-generation', label: 'Image Generation', name: 'Image Generation' },
-      { key: 'video-generation', label: 'Video Generation', name: 'Video Generation' },
+      { key: 'web', label: 'Web' },
+      { key: 'database', label: 'Database' },
+      { key: 'context', label: 'Context' },
+      { key: 'quality', label: 'Quality' },
+      { key: 'reasoning', label: 'Reasoning' },
+      { key: 'image-rotation', label: 'Image Rotation' },
+      { key: 'audio-generation', label: 'Audio Generation' },
+      { key: 'voice-generation', label: 'Voice Generation' },
+      { key: 'image-generation', label: 'Image Generation' },
+      { key: 'video-generation', label: 'Video Generation' },
     ];
 
     const HOURS = 24;
     const REFRESH_MS = 60_000;
 
     /* -- Data Fetching -- */
-    async function fetchUpptime() {
+    async function rpc(fn, params = {}) {
       try {
-        const r = await fetch(UPPTIME_URL);
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+        });
         return r.ok ? r.json() : [];
       } catch { return []; }
     }
 
-    async function fetchCommits() {
-      try {
-        const since = new Date(Date.now() - (HOURS + 1) * 3600_000).toISOString();
-        const r = await fetch(`${COMMITS_URL}?since=${since}&per_page=100`);
-        if (!r.ok) return [];
-        return r.json();
-      } catch { return []; }
-    }
-
     async function loadAll() {
-      const [upptime, commits] = await Promise.allSettled([
-        fetchUpptime(),
-        fetchCommits(),
+      const [hourly, current, incidents] = await Promise.allSettled([
+        rpc('get_uptime_hourly', { hours_back: HOURS }),
+        rpc('get_current_status'),
+        rpc('get_recent_incidents', { days_back: 7 }),
       ]);
       return {
-        upptime: upptime.status === 'fulfilled' ? upptime.value : [],
-        commits: commits.status === 'fulfilled' ? commits.value : [],
+        hourly: hourly.status === 'fulfilled' ? hourly.value : [],
+        current: current.status === 'fulfilled' ? current.value : [],
+        incidents: incidents.status === 'fulfilled' ? incidents.value : [],
       };
     }
 
-    /* -- Parse Commits -- */
-    function parseStatusCommits(commits) {
-      // Pattern: " ServiceName is up/down (code in time ms)"
-      // Also handle old name: "LLM (OpenRouter)"
-      const re = /^\s*(.+?)\s+is\s+(up|down)\s+\((\d+)\s+in\s+([\d.]+)\s+ms\)\s*$/;
-      const checks = [];
-
-      for (const c of commits) {
-        const msg = c.commit?.message;
-        const date = c.commit?.author?.date || c.commit?.committer?.date;
-        if (!msg || !date) continue;
-        const m = msg.match(re);
-        if (!m) continue;
-        checks.push({
-          service: m[1].trim(),
-          status: m[2],
-          code: parseInt(m[3]),
-          ms: parseFloat(m[4]),
-          time: new Date(date),
-        });
-      }
-
-      return checks;
-    }
-
-    function buildNameToKeyMap() {
-      const map = {};
-      for (const svc of SERVICES) {
-        map[svc.name.toLowerCase()] = svc.key;
-        // Also map old names
-        if (svc.key === 'llm-open-router') map['llm (openrouter)'] = svc.key;
-      }
-      return map;
-    }
-
     /* -- Helpers -- */
-    function resolveUptimeStatus(svc) {
-      const pct = parseFloat(svc.uptimeDay || svc.uptime || '0');
-      if (pct >= 99) return 'up';
-      if (pct >= 90) return 'degraded';
-      return 'down';
-    }
-
     function getHourSlots() {
       const slots = [];
       const now = new Date();
@@ -277,24 +245,27 @@
         const d = new Date(now);
         d.setMinutes(0, 0, 0);
         d.setHours(d.getHours() - i);
-        slots.push(d);
+        slots.push(d.toISOString());
       }
       return slots;
     }
 
-    function formatHour(d) {
+    function formatHour(iso) {
+      const d = new Date(iso);
       return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     }
 
-    function formatHourRange(d) {
+    function formatHourRange(iso) {
+      const d = new Date(iso);
       const end = new Date(d);
       end.setHours(end.getHours() + 1);
-      return `${formatHour(d)} \u2013 ${formatHour(end)}`;
+      return `${formatHour(iso)} \u2013 ${formatHour(end.toISOString())}`;
     }
 
     function statusLabel(s) {
       if (s === 'up') return 'Operational';
       if (s === 'degraded') return 'Degraded';
+      if (s === 'cold') return 'Operational';
       if (s === 'down') return 'Down';
       return 'No data';
     }
@@ -307,87 +278,84 @@
 
     /* -- Build Service Data -- */
     function buildServiceData(data) {
-      const uptimeMap = {};
-      for (const svc of data.upptime) {
-        uptimeMap[svc.slug] = svc;
-      }
-
-      const nameToKey = buildNameToKeyMap();
-      const statusChecks = parseStatusCommits(data.commits);
       const slots = getHourSlots();
 
-      // Group checks by service key
-      const checksByService = {};
-      for (const check of statusChecks) {
-        const key = nameToKey[check.service.toLowerCase()];
-        if (!key) continue;
-        if (!checksByService[key]) checksByService[key] = [];
-        checksByService[key].push(check);
+      // Index hourly data by service + hour
+      // Normalize to YYYY-MM-DDTHH to avoid millisecond/format mismatches
+      function hourKey(service, dateStr) {
+        const d = new Date(dateStr);
+        return `${service}:${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}T${String(d.getUTCHours()).padStart(2,'0')}`;
+      }
+      const hourlyMap = {};
+      for (const row of data.hourly) {
+        hourlyMap[hourKey(row.service, row.hour)] = row;
       }
 
-      // Sort checks by time ascending for each service
-      for (const key of Object.keys(checksByService)) {
-        checksByService[key].sort((a, b) => a.time - b.time);
+      // Index current status by service
+      const currentMap = {};
+      for (const row of data.current) {
+        currentMap[row.service] = row;
       }
+
+      const now = new Date();
+      const currentHour = new Date(now);
+      currentHour.setMinutes(0, 0, 0);
+      const currentHourISO = currentHour.toISOString();
 
       const services = [];
       for (const svc of SERVICES) {
-        const ut = uptimeMap[svc.key];
-        const checks = checksByService[svc.key] || [];
-
-        let currentStatus = 'unknown';
-        let responseTime = null;
-        let uptimePct = null;
-
-        if (ut) {
-          currentStatus = resolveUptimeStatus(ut);
-          responseTime = ut.time || null;
-          uptimePct = parseFloat(ut.uptimeDay || ut.uptime || '100').toFixed(2);
-        }
-
-        // Build hourly bars from commit history
         const hours = [];
-        let hasBarData = checks.length > 0;
+        let totalChecks = 0;
+        let correctChecks = 0;
 
         for (const slot of slots) {
-          const slotEnd = new Date(slot);
-          slotEnd.setHours(slotEnd.getHours() + 1);
+          const h = hourlyMap[hourKey(svc.key, slot)];
+          const isCurrentHour = slot === currentHourISO;
 
-          // Find checks within this hour
-          const hourChecks = checks.filter(c => c.time >= slot && c.time < slotEnd);
+          if (h) {
+            const correct = Number(h.correct_checks);
+            const total = Number(h.total_checks);
 
-          if (hourChecks.length > 0) {
-            // Use the latest check in this hour
-            const latest = hourChecks[hourChecks.length - 1];
-            const avgMs = Math.round(
-              hourChecks.reduce((sum, c) => sum + c.ms, 0) / hourChecks.length
-            );
-            hours.push({
-              slot,
-              status: latest.status,
-              checks: hourChecks.length,
-              avgMs,
-            });
-          } else {
-            // No checks in this hour - find the most recent check before this slot
-            const prior = checks.filter(c => c.time < slot);
-            if (prior.length > 0) {
-              const lastKnown = prior[prior.length - 1];
-              hours.push({ slot, status: lastKnown.status, checks: 0, avgMs: null });
+            let status;
+            if (isCurrentHour) {
+              // Current hour: use latest check status directly
+              const cur = currentMap[svc.key];
+              status = cur ? cur.status : h.hour_status;
             } else {
-              hours.push({ slot, status: 'empty', checks: 0, avgMs: null });
+              // Past hours: 9-12 correct = up, 5-8 = degraded, 0-4 = down
+              status = h.hour_status;
             }
+
+            hours.push({
+              hour: slot,
+              status,
+              total,
+              correct,
+            });
+            totalChecks += total;
+            correctChecks += correct;
+          } else {
+            hours.push({ hour: slot, status: 'empty', total: 0, correct: 0 });
           }
+        }
+
+        // Current status from latest check
+        const cur = currentMap[svc.key];
+        const currentStatus = cur ? cur.status : 'unknown';
+
+        // Uptime percentage
+        let uptimePct = null;
+        if (totalChecks > 0) {
+          uptimePct = ((correctChecks / totalChecks) * 100).toFixed(2);
         }
 
         services.push({
           key: svc.key,
           label: svc.label,
           status: currentStatus,
-          uptimePct,
-          avgMs: responseTime,
           hours,
-          hasBarData,
+          uptimePct,
+          hasData: totalChecks > 0,
         });
       }
 
@@ -434,14 +402,16 @@
 
         html += `<div class="bars-container">`;
 
-        if (svc.hasBarData) {
+        if (svc.hasData) {
           html += `<div class="bars">`;
+          const currentHourISO = new Date(new Date().setMinutes(0,0,0)).toISOString();
           for (const h of svc.hours) {
-            const detail = h.checks > 0
-              ? `${h.checks} check${h.checks > 1 ? 's' : ''}${h.avgMs ? ' \u00b7 ' + h.avgMs + 'ms' : ''}`
-              : (h.status !== 'empty' ? 'No change' : 'No data');
+            const isCurrentHour = h.hour === currentHourISO;
+            const detail = h.total > 0
+              ? (isCurrentHour ? `${h.total}/12 checks` : `${h.correct}/12 checks correct`)
+              : 'No data';
             html += `<div class="bar ${h.status}"
-              data-time="${formatHourRange(h.slot)}"
+              data-time="${formatHourRange(h.hour)}"
               data-status="${h.status}"
               data-detail="${detail}"></div>`;
           }
@@ -450,8 +420,6 @@
           html += `<span>24h ago</span>`;
           html += `<div class="bars-footer-center">`;
           if (svc.uptimePct !== null) html += `<span>${svc.uptimePct}% uptime</span>`;
-          if (svc.uptimePct !== null && svc.avgMs) html += `<span class="sep"></span>`;
-          if (svc.avgMs) html += `<span>${svc.avgMs}ms avg</span>`;
           html += `</div>`;
           html += `<span>Now</span>`;
           html += `</div>`;
@@ -460,8 +428,6 @@
           html += `<span></span>`;
           html += `<div class="bars-footer-center">`;
           if (svc.uptimePct !== null) html += `<span>${svc.uptimePct}% uptime</span>`;
-          if (svc.uptimePct !== null && svc.avgMs) html += `<span class="sep"></span>`;
-          if (svc.avgMs) html += `<span>${svc.avgMs}ms avg</span>`;
           html += `</div>`;
           html += `<span></span>`;
           html += `</div>`;
@@ -477,24 +443,16 @@
       html += '<div class="incidents">';
       html += '<div class="section-header">Recent Incidents</div>';
 
-      const incidents = [];
-      for (const ut of data.upptime) {
-        if (ut.dailyMinutesDown) {
-          for (const [date, minutes] of Object.entries(ut.dailyMinutesDown)) {
-            if (minutes > 0) {
-              incidents.push({ label: ut.name, date, minutes });
-            }
-          }
-        }
-      }
+      const incidents = data.incidents || [];
 
       if (incidents.length === 0) {
         html += '<div class="incidents-empty">No incidents in the last 7 days</div>';
       } else {
         const byDay = {};
         for (const inc of incidents) {
-          if (!byDay[inc.date]) byDay[inc.date] = [];
-          byDay[inc.date].push(inc);
+          const day = new Date(inc.checked_at).toISOString().slice(0, 10);
+          if (!byDay[day]) byDay[day] = [];
+          byDay[day].push(inc);
         }
         for (const day of Object.keys(byDay).sort().reverse()) {
           const d = new Date(day + 'T00:00:00');
@@ -502,11 +460,12 @@
           html += `<div class="incident-day">`;
           html += `<div class="incident-date">${label}</div>`;
           for (const inc of byDay[day]) {
-            const severity = inc.minutes > 30 ? 'major' : 'minor';
+            const svcLabel = SERVICES.find(s => s.key === inc.service)?.label || inc.service;
+            const time = new Date(inc.checked_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
             html += `<div class="incident-card">`;
             html += `<div class="incident-header">`;
-            html += `<span class="incident-severity ${severity}"></span>`;
-            html += `<span class="incident-title">${inc.label} &mdash; ${inc.minutes} min downtime</span>`;
+            html += `<span class="incident-severity major"></span>`;
+            html += `<span class="incident-title">${svcLabel} &mdash; Down at ${time}</span>`;
             html += `</div>`;
             html += `</div>`;
           }
@@ -515,6 +474,20 @@
       }
 
       html += '</div>';
+
+      // Color legend
+      html += `
+        <div class="legend">
+          <div class="section-header">Color Code</div>
+          <div class="legend-items">
+            <div class="legend-item"><span class="legend-dot up"></span> Operational</div>
+            <div class="legend-item"><span class="legend-dot degraded"></span> Degraded</div>
+            <div class="legend-item"><span class="legend-dot down"></span> Down</div>
+            <div class="legend-item"><span class="legend-dot cold"></span> Cold (low traffic)</div>
+            <div class="legend-item"><span class="legend-dot empty"></span> No data</div>
+          </div>
+        </div>
+      `;
 
       app.innerHTML = html;
       setupTooltips();
