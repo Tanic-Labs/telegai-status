@@ -140,6 +140,53 @@ jobs:
             echo "Committed: ${COMMIT_MSG}"
           }
 
+          # check_metrics SERVICE_KEY DISPLAY_NAME METRICS_URL
+          # Hits a Prometheus /metrics endpoint and checks vllm:num_requests_running
+          check_metrics() {
+            local SERVICE_KEY="$1"
+            local DISPLAY_NAME="$2"
+            local METRICS_URL="$3"
+
+            RESPONSE=$(curl -s -w "\n%{http_code}" --max-time 10 "${METRICS_URL}")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+
+            if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 400 ]]; then
+              RUNNING=$(echo "$BODY" | grep -oP 'vllm:num_requests_running\{[^}]*\}\s+\K[\d.]+' | head -1)
+              if [ -n "$RUNNING" ]; then
+                RUNNING_INT=$(echo "$RUNNING" | cut -d. -f1)
+                if [ "$RUNNING_INT" -gt 30 ]; then
+                  STATUS="degraded"
+                  EMOJI="🟨"
+                else
+                  STATUS="up"
+                  EMOJI="🟩"
+                fi
+                DETAIL="${RUNNING} running requests"
+              else
+                STATUS="up"
+                EMOJI="🟩"
+                DETAIL="HTTP ${HTTP_CODE}"
+              fi
+            else
+              STATUS="down"
+              EMOJI="🟥"
+              DETAIL="HTTP ${HTTP_CODE}"
+            fi
+
+            COMMIT_MSG="${EMOJI} ${DISPLAY_NAME} is ${STATUS} (${DETAIL})"
+            git commit --allow-empty -m "${COMMIT_MSG}"
+
+            curl -s -o /dev/null \
+              -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "{\"service\":\"${SERVICE_KEY}\",\"status\":\"${STATUS}\",\"error_rate\":0,\"total_invocations\":1}" \
+              "${SUPABASE_URL}/rest/v1/uptime_checks"
+
+            echo "Committed: ${COMMIT_MSG}"
+          }
+
           check_web
 
           # Edge Functions (error threshold: >= 400)
@@ -148,9 +195,8 @@ jobs:
           check_service function_edge_logs "voice-generation"  "Voice Generation"  400 '/functions/v1/generate-voice-candidates$' '/functions/v1/generate-voice-from-candidate$'
           check_service function_edge_logs "image-generation"  "Image Generation"  400 '/functions/v1/qwen-image-edit$'
           check_service function_edge_logs "video-generation"  "Video Generation"  400 '/functions/v1/wan-video-generation$'
-          check_service function_edge_logs "context"           "Context"           400 '/functions/v1/chat$'
-          check_service function_edge_logs "quality"           "Quality"           400 '/functions/v1/chat-pro$'
-          check_service function_edge_logs "reasoning"         "Reasoning"         400 '/functions/v1/chat-deepthink$'
+          check_metrics "context" "Context" "https://cydonia.termo.ai/metrics"
+          check_metrics "quality" "Quality" "https://gpu.termo.ai/metrics"
 
           # Database (error threshold: >= 500, only server errors)
           check_service edge_logs "database" "Database" 500 '/rest/v1/'
