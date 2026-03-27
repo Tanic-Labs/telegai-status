@@ -192,7 +192,7 @@ jobs:
           # Edge Functions (error threshold: >= 400)
           check_service function_edge_logs "image-rotation"    "Image Rotation"    400 '/functions/v1/angle-rotation-wavespeed$'
           check_service function_edge_logs "audio-generation"  "Audio Generation"  400 '/functions/v1/chatterbox-tts$'
-          check_service function_edge_logs "voice-generation"  "Voice Generation"  400 '/functions/v1/generate-voice-candidates$' '/functions/v1/generate-voice-from-candidate$'
+          check_service function_edge_logs "voice-generation"  "Voice Generation"  400 '/functions/v1/fish-tts$'
           check_metrics "image-generation" "Image Generation" "https://vision.termo.ai/metrics"
           check_service function_edge_logs "video-generation"  "Video Generation"  400 '/functions/v1/wan-video-generation$'
           check_metrics "context" "Context" "https://cydonia.termo.ai/metrics"
