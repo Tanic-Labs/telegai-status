@@ -188,12 +188,36 @@ jobs:
           }
 
           check_web
+          check_metrics "standard" "Standard" "https://free.termo.ai/metrics"
 
           # Edge Functions (error threshold: >= 400)
           check_service function_edge_logs "image-rotation"    "Image Rotation"    400 '/functions/v1/angle-rotation-wavespeed$'
           check_service function_edge_logs "audio-generation"  "Audio Generation"  400 '/functions/v1/chatterbox-tts$'
           check_service function_edge_logs "voice-generation"  "Voice Generation"  400 '/functions/v1/fish-tts$'
-          check_metrics "image-generation" "Image Generation" "https://vision.termo.ai/metrics"
+          # Image Generation: double check — vision metrics + img queue
+          VISION_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://vision.termo.ai/metrics")
+          QUEUE_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://img.termo.ai/queue")
+
+          VISION_OK=false; QUEUE_OK=false
+          [[ "$VISION_CODE" -ge 200 && "$VISION_CODE" -lt 400 ]] && VISION_OK=true
+          [[ "$QUEUE_CODE" -ge 200 && "$QUEUE_CODE" -lt 400 ]] && QUEUE_OK=true
+
+          if $VISION_OK && $QUEUE_OK; then
+            IMG_STATUS="up"; IMG_EMOJI="🟩"
+          elif $VISION_OK || $QUEUE_OK; then
+            IMG_STATUS="degraded"; IMG_EMOJI="🟨"
+          else
+            IMG_STATUS="down"; IMG_EMOJI="🟥"
+          fi
+
+          git commit --allow-empty -m "${IMG_EMOJI} Image Generation is ${IMG_STATUS} (vision=${VISION_CODE}, queue=${QUEUE_CODE})"
+          curl -s -o /dev/null \
+            -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "{\"service\":\"image-generation\",\"status\":\"${IMG_STATUS}\",\"error_rate\":0,\"total_invocations\":1}" \
+            "${SUPABASE_URL}/rest/v1/uptime_checks"
+          echo "Image Generation: vision=${VISION_CODE}, queue=${QUEUE_CODE} → ${IMG_STATUS}"
           check_service function_edge_logs "video-generation"  "Video Generation"  400 '/functions/v1/wan-video-generation$'
           check_metrics "context" "Context" "https://cydonia.termo.ai/metrics"
           check_metrics "quality" "Quality" "https://gpu.termo.ai/metrics"
