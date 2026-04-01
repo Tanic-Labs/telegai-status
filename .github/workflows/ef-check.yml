@@ -188,7 +188,7 @@ jobs:
           }
 
           check_web
-          check_metrics "standard" "Standard" "https://free.termo.ai/metrics"
+          check_metrics "standard" "Free" "https://free.termo.ai/metrics"
 
           # Edge Functions (error threshold: >= 400)
           check_service function_edge_logs "image-rotation"    "Image Rotation"    400 '/functions/v1/angle-rotation-wavespeed$'
@@ -219,8 +219,8 @@ jobs:
             "${SUPABASE_URL}/rest/v1/uptime_checks"
           echo "Image Generation: vision=${VISION_CODE}, queue=${QUEUE_CODE} → ${IMG_STATUS}"
           check_service function_edge_logs "video-generation"  "Video Generation"  400 '/functions/v1/wan-video-generation$'
-          check_metrics "context" "Context" "https://cydonia.termo.ai/metrics"
-          check_metrics "quality" "Quality" "https://gpu.termo.ai/metrics"
+          check_metrics "context" "Standard" "https://cydonia.termo.ai/metrics"
+          check_metrics "quality" "Max" "https://gpu.termo.ai/metrics"
 
           # Database (error threshold: >= 500, only server errors)
           check_service edge_logs "database" "Database" 500 '/rest/v1/'
