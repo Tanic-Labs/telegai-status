@@ -141,7 +141,7 @@ jobs:
           }
 
           # check_metrics SERVICE_KEY DISPLAY_NAME METRICS_URL
-          # Hits a Prometheus /metrics endpoint and checks vllm:num_requests_running
+          # Hits a Prometheus /metrics endpoint and checks running requests (vLLM or SGLang metric name)
           check_metrics() {
             local SERVICE_KEY="$1"
             local DISPLAY_NAME="$2"
@@ -152,7 +152,7 @@ jobs:
             BODY=$(echo "$RESPONSE" | sed '$d')
 
             if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 400 ]]; then
-              RUNNING=$(echo "$BODY" | grep -oP 'vllm:num_requests_running\{[^}]*\}\s+\K[\d.]+' | head -1)
+              RUNNING=$(echo "$BODY" | grep -oP '(?:vllm:num_requests_running|sglang:num_running_reqs)\{[^}]*\}\s+\K[\d.]+' | head -1)
               if [ -n "$RUNNING" ]; then
                 RUNNING_INT=$(echo "$RUNNING" | cut -d. -f1)
                 if [ "$RUNNING_INT" -gt 30 ]; then
@@ -219,7 +219,8 @@ jobs:
           echo "Image Generation: vision=${VISION_CODE}, queue=${QUEUE_CODE} → ${IMG_STATUS}"
           check_service function_edge_logs "video-generation"  "Video Generation"  400 '/functions/v1/wan-video-generation$'
           check_metrics "context" "Standard" "https://cydonia.termo.ai/metrics"
-          check_metrics "quality" "Max" "https://gpu.termo.ai/metrics"
+          check_metrics "quality" "Max" "https://max.termo.ai/metrics"
+          check_metrics "ultra" "Ultra" "https://gpu.termo.ai/metrics"
 
           # Database (error threshold: >= 500, only server errors)
           check_service edge_logs "database" "Database" 500 '/rest/v1/'
